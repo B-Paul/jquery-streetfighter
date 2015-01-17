@@ -1,49 +1,101 @@
-$(document).ready(function () {
+var doc = $(document);
+doc.ready(function () {
+  var ryu, ready, cool, throwing, hadouken, sound;
 
-  var STATES, setRyu
+  // The order of .ryu elements in the document determines priority.
+  // The first one with class 'active' is the one that is displayed.
+  ryu = $('.ryu');
 
-  STATES = {
-    none: $('.ryu'),
-    ready: $('<img src="images/ryu-ready-position.gif">'),
-    throwing: $('<img src="images/ryu-throwing-hadouken.png">'),
-    cool: $('<img src="images/ryu-cool.gif">')
-  };
+  ready = $('#ryu-ready');
+  cool = $('#ryu-cool');
+  throwing = $('#ryu-throwing');
+  hadouken = $('#hadouken');
+  sound = $('#hadouken-sound').get(0);
 
-  setRyu = (function () {
-    var activeRyu = STATES['none'];
-    return function (newState) {
-      var ryu = activeRyu;
-      activeRyu = STATES[newState];
-      ryu.replaceWith(activeRyu);
+  sound.load();
+
+  doc
+    // if x pressed, ryu should act cool as long as he is not throwing a
+    // hadouken
+    .on('keydown', keydown)
+    // if x released, no longer act cool
+    .on('keyup', keyup);
+
+  ryu
+    // ryu should throw a hadouken for at least half a second
+    .on('mousedown', click)
+    // no longer throw a hadouken
+    .on('mouseup', release)
+    // ryu should act ready as long as he is not throwing a hadouken or acting
+    // cool
+    .on('mouseenter', hover)
+    // no longer act ready
+    .on('mouseleave', leave);
+
+  function keydown(event) {
+    if (event.keyCode === 88) {
+      activate(cool);
     }
-  }());
-
-  (function () {
-    var loadCount = 0;
-    $.each(STATES, function (k, v) {
-      v.addClass('ryu');
-      v.load(function () {
-        if (++loadCount === 3) {
-          readyListeners();
-        }
-      });
-    });
-  }());
-
-  function readyListeners() {
-    $('#frame').on('mouseenter', '.ryu', setRyu.bind(null, 'ready'));
-    $('#frame').on('mouseleave', '.ryu', setRyu.bind(null, 'none'));
-    $('#frame').on('mousedown', '.ryu', setRyu.bind(null, 'throwing'));
-    $('#frame').on('mouseup', '.ryu', setRyu.bind(null, 'none'));
-    $(document).on('keydown', function (event) {
-      if (event.keyCode === 88) {
-        setRyu('cool');
-      }
-    });
-    $(document).on('keyup', function (event) {
-      if (event.keyCode === 88) {
-        setRyu('none');
-      }
-    });
   }
+
+  function keyup(event) {
+    if (event.keyCode == 88) {
+      deactivate(cool);
+    }
+  }
+
+  function click() {
+    var refFun = refresh;
+    activate(throwing);
+    throwHadouken();
+
+    // For 500ms after a click, new events will not cause ryu to change pose.
+    refresh = noop;
+    setTimeout(function () {
+      refresh = refresh === noop ? refFun : refresh;
+      // When the timeout ends, respond to changes that occured in that time.
+      refresh();
+    }, 500);
+  }
+
+  function release() {
+    deactivate(throwing);
+  }
+
+  function hover() {
+    activate(ready);
+  }
+
+  function leave() {
+    deactivate(ready);
+  }
+
+  function activate(jq) {
+    jq.addClass('active');
+    refresh();
+  }
+
+  function deactivate(jq) {
+    jq.removeClass('active');
+    refresh();
+  }
+
+  function refresh() {
+    ryu.addClass('hidden').filter('.active').first().removeClass('hidden');
+  }
+
+  function noop() {}
+
+  function throwHadouken() {
+    sound.fastSeek(0);
+    sound.play();
+    hadouken.clone()
+      .removeAttr('id')
+      .removeClass('hidden')
+      .insertAfter(hadouken)
+      .addClass('active')
+      .on('webkitAnimationEnd oanimationend msAnimationEnd animationend',
+        function () { $(this).remove(); });
+  }
+
 });

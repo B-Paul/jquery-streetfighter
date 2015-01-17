@@ -12,3 +12,35 @@ body {
   padding-left: 100px;
   min-width: 1200px;
 }
+
+.hidden {
+  display: none;
+}
+
+.hadouken.active {
+  position: absolute;
+  top: 275px;
+  -webkit-animation: hadouken .5s 1 linear;
+          animation: hadouken .5s 1 linear;
+}
+
+@-webkit-keyframes hadouken {
+
+  from {
+    left: 650px;
+  }
+
+  to {
+    left: 1200px;
+  }
+}
+
+@keyframes hadouken {
+  from {
+    left: 0;
+  }
+
+  to {
+    left: 400px;
+  }
+}
